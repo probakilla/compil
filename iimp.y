@@ -1,6 +1,11 @@
 %{
   #include <stdio.h>
   #include <stdlib.h>
+
+  /**
+   * Mini projet de compilation S6.
+   * Groupe de Chupin Guillaume et Pilleux Julien.
+   **/
 %}
 
 %start C
