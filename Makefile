@@ -21,4 +21,4 @@ inter_c3a: inter_c3a.c
 	$(CC) inter_c3a.c $(FFLAGS)
 
 clean:
-	rm -rf exo5 *.o *.c $(ANASYNT).h
+	rm -f *.o *.c
