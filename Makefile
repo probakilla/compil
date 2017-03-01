@@ -1,24 +1,21 @@
 CC = gcc
 CFLAGS = -std=c89
-FFLAG=-lfl
 FLEX = lex
 YACC = yacc
 
 .l.c:
 	$(FLEX) -o $@ $<
+	mv $*.c $*.lex.c
 
 .y.c:
 	$(YACC) --file-prefix=$* -d $<
-	mv $*.tab.c $*.c
-	mv $*.tab.h $*.h
+	mv $*.tab.c $*.yacc.c
+	mv $*.tab.h $*.yacc.h
 .c.o:
 	$(CC) -c -o $@ $<
 
-inter_imp: inter_imp.c
-	$(CC) inter_imp.c $(FFLAGS)
-
-inter_c3a: inter_c3a.c
-	$(CC) inter_c3a.c $(FFLAGS)
+iimp: iimp.yacc.o iimp.lex.o
+	$(CC) -o $@ $^
 
 clean:
-	rm -f *.o *.c
+	rm -f *.o *.c iimp.yacc.h
