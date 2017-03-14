@@ -1,21 +1,59 @@
-CC = gcc
-CFLAGS = -std=c89
-FLEX = lex
-YACC = yacc
+SRCS = environ.c bilquad.c
+OBJS = $(SRCS:.c=.o)
 
-.l.c:
-	$(FLEX) -o $@ $<
-	mv $*.c $*.lex.c
+LEX_IN  =   $(wildcard *.l)
+YACC_IN =   $(wildcard *.y)
+LEX_OUT     =   $(patsubst %.l, %, $(LEX_IN))
+YACC_OUT    =   $(patsubst %.y, %, $(YACC_IN))
 
-.y.c:
-	$(YACC) --file-prefix=$* -d $<
-	mv $*.tab.c $*.yacc.c
-	mv $*.tab.h $*.yacc.h
-.c.o:
-	$(CC) -c -o $@ $<
+CC      =   gcc
+RM      =   rm -f
+LEX     =   flex
+YACC    =   bison -d
 
-iimp: iimp.yacc.o iimp.lex.o
-	$(CC) -o $@ $^
+CFLAGS      =
+LDFLAGS     =
 
-clean:
-	rm -f *.o *.c iimp.yacc.h
+.PHONY      :   all flexalone yaccalone clean re
+.PRECIOUS   :   %.tab.c %.tab.h %.tab.o %.yy.c %.yy.o %.o
+.SUFFIXES   :   .c .h .l .o .tab.c .tab.h .tab.o .y .yy.c .yy.o
+
+%                       :   %.tab.o %.yy.o $(OBJS)
+	 		$(CC) -o $@ $*.tab.o $*.yy.o $(OBJS)
+
+%.tab.c %.tab.h %.yy.c  :   %.y %.l
+			$(YACC) -o $*.tab.c $*.y
+			$(LEX) -o $*.yy.c $*.l
+
+%       :   %.yy.o
+	$(CC) -o $@ -DFLEXALONE $*.yy.o -lfl
+
+%.yy.o  :   %.yy.c
+	$(CC) -c -o $@ $*.yy.c
+
+%.yy.c  :   %.l
+	$(LEX) -o $@ $*.l
+
+%               :   %.tab.o
+		$(CC) -o $@ $*.tab.o
+
+%.tab.o         :   %.tab.c %.tab.h
+		$(CC) -c -o $@ $*.tab.c
+
+%.tab.c %.tab.h :   %.y
+		$(YACC) -o $@ $*.y
+
+all         :   yacctargets flextargets
+
+yacctargets :   $(YACC_IN:%.y=%)
+
+flextargets :   $(LEX_IN:%.l=%)
+
+clean       :
+	$(RM) *~
+	$(RM) *.tab.c *.tab.h *.tab.o
+	$(RM) *.yy.c *.yy.o
+	$(RM) $(LEX_OUT)
+	$(RM) $(YACC_OUT)
+
+re          :   clean all
