@@ -1,4 +1,8 @@
 %{
+   /**
+   * Mini projet de compilation S6.
+   * Groupe de Chupin Guillaume et Pilleux Julien.
+   **/
   #include <stdio.h>
   #include <stdlib.h>
   #include <string.h>
@@ -16,10 +20,6 @@
   int cpt, taille, nbElem;
   char **tab;
   int *valTab;
-  /**
-   * Mini projet de compilation S6.
-   * Groupe de Chupin Guillaume et Pilleux Julien.
-   **/
 %}
 
 %union {
@@ -38,7 +38,7 @@
 
 %%
 
-S : C              {BILQUAD bil = bilquad_vide(); ic3a($1, bil);}
+S : C              {BILQUAD bil = bilquad_vide(); ic3a($1, bil); ecrire_bilquad(bil);}
   ;
 
 E : E PL T         {$$ = opr(Pl, 2, $1, $3);}
@@ -73,21 +73,29 @@ char*ic3a(nodeType *n, BILQUAD bil)
   if (!n)
     return NULL;
   char *etiq = buf_alloc();
-  char* res = buf_alloc();
   char* arg1 = buf_alloc();
   char* arg2 = buf_alloc();
+  char* res = buf_alloc();
   switch(n->type)
     { 
     case typeCon:
       sprintf (etiq,"ET%d", cpt++);
       sprintf (res, "CT%d", cpt++);
       sprintf (arg1, "%d", n->con.value);
-      concatq(bil, creer_bilquad(creer_quad (etiq, Afc, arg1, NULL, res)));
+      bil = concatq(bil, creer_bilquad(creer_quad (etiq, Afc, arg1, NULL, res)));
+      free(etiq);
+      free(arg1);
+      free(arg2);
+      free(res);
       return res;
     case typeId:
       sprintf (etiq,"ET%d", cpt++);
       sprintf (res, "%d", n->id.i);
-      concatq(bil, creer_bilquad(creer_quad (etiq, Sk, NULL, NULL, res)));
+      bil = concatq(bil, creer_bilquad(creer_quad (etiq, Sk, NULL, NULL, res)));
+      free(etiq);
+      free(arg1);
+      free(arg2);
+      free(res);
       return res;
     case typeOpr:
       switch(n->type)
@@ -96,20 +104,94 @@ char*ic3a(nodeType *n, BILQUAD bil)
 	  sprintf (etiq,"ET%d", cpt++);
 	  arg1 = ic3a(n->opr.op[0], bil);
 	  arg2 =  ic3a(n->opr.op[1], bil);
-	  sprintf (res, "VA%d", cpt++);
-	  concatq(bil, creer_bilquad(creer_quad (etiq, Af, arg1, arg2, res)));
+	  bil = concatq(bil, creer_bilquad(creer_quad (etiq, Af, arg1, arg2, NULL)));
+	  free(etiq);
+	  free(arg1);
+	  free(arg2);
+	  free(res);
 	  return res;
 	case Sk:
-	  sprintf (etiq,"ET%d", cpt++);
-	  arg1 = ic3a(n->opr.op[0], bil);
-	  arg2 = ic3a(n->opr.op[1], bil);
-	  concatq(bil, creer_bilquad(creer_quad (etiq, Sk, NULL, NULL, NULL)));	  
-	  //case Se:
-	  //contaq();
-	  
+	    sprintf (etiq,"ET%d", cpt++);
+	    arg1 = ic3a(n->opr.op[0], bil);
+	    arg2 = ic3a(n->opr.op[1], bil);
+	    bil = concatq(bil, creer_bilquad(creer_quad (etiq, Sk, NULL, NULL, NULL)));	  
+	case Se:
+	    ic3a(n->opr.op[0], bil);
+	    ic3a(n->opr.op[1], bil);
+	case If:
+	    sprintf (etiq,"ET%d", cpt++);
+	    res = ic3a(n->opr.op[0], bil);
+	    bil = concatq(bil, creer_bilquad(creer_quad (etiq, Sk, NULL, NULL, res)));
+	    char *arg1DebutIf = res;
+	    BILQUAD then = bilquad_vide();
+	    ic3a(n->opr.op[1], then);
+	    BILQUAD els =  bilquad_vide();
+	    ic3a(n->opr.op[2], els);	  
+	    sprintf (res,"ET%d", cpt);
+	    then = concatq(then, creer_bilquad(creer_quad (etiq, Jp, NULL, NULL, res)));
+	    els = concatq(els, creer_bilquad(creer_quad (etiq, Sk, NULL, NULL, NULL)));
+	    res = els.debut->ETIQ;
+	    sprintf (etiq,"ET%d", cpt++);
+	    bil = concatq(bil, creer_bilquad(creer_quad (etiq, Jz, arg1DebutIf, NULL, res)));
+	    bil = concatq(bil, then);
+	    bil = concatq(bil, els);
+	case Wh:
+	    sprintf (etiq,"ET%d", cpt++);
+	    res = ic3a(n->opr.op[0], bil);
+	    BILQUAD debutWhile = creer_bilquad(creer_quad (etiq, Sk, NULL, NULL, res));
+	    char* etiqDebutWhile = debutWhile.debut->ETIQ;
+	    bil = concatq(bil, debutWhile);
+	    char *arg1DebutWhile = res;	
+	    BILQUAD Do = bilquad_vide();
+	    ic3a(n->opr.op[1], Do);
+	    sprintf (etiq,"ET%d", cpt++);
+	    Do = concatq(Do, creer_bilquad(creer_quad (etiq, Jp, NULL, NULL, etiqDebutWhile)));
+	    sprintf (res,"ET%d", cpt + 1);
+	    bil = concatq(bil, creer_bilquad(creer_quad (etiq, Jz, arg1DebutWhile, NULL, res)));
+	    bil = concatq(bil, Do);
+	    sprintf (etiq,"ET%d", cpt++);
+	    bil = concatq(bil, creer_bilquad(creer_quad (etiq, Sk, NULL, NULL, NULL)));
+	case Pl:
+	    sprintf (etiq,"ET%d", cpt++);
+	    arg1 = ic3a(n->opr.op[0], bil);
+	    arg2 =  ic3a(n->opr.op[1], bil);
+	    sprintf (res, "VA%d", cpt++);
+	    bil = concatq(bil, creer_bilquad(creer_quad (etiq, Pl, arg1, arg2, res)));
+	    free(etiq);
+	    free(arg1);
+	    free(arg2);
+	    free(res);
+	    return res;
+	case Mo:
+	    sprintf (etiq,"ET%d", cpt++);
+	    arg1 = ic3a(n->opr.op[0], bil);
+	    arg2 =  ic3a(n->opr.op[1], bil);
+	    sprintf (res, "VA%d", cpt++);
+	    bil = concatq(bil, creer_bilquad(creer_quad (etiq, Mo, arg1, arg2, res)));
+	    free(etiq);
+	    free(arg1);
+	    free(arg2);
+	    free(res);
+	    return res;
+	case Mu:
+	    sprintf (etiq,"ET%d", cpt++);
+	    arg1 = ic3a(n->opr.op[0], bil);
+	    arg2 =  ic3a(n->opr.op[1], bil);
+	    sprintf (res, "VA%d", cpt++);
+	    bil = concatq(bil, creer_bilquad(creer_quad (etiq, Mu, arg1, arg2, res)));
+	    free(etiq);
+	    free(arg1);
+	    free(arg2);
+	    free(res);
+	    return res;	    
 	}
-      
   }
+  sprintf (etiq,"ET%d", cpt++);
+  bil = concatq(bil, creer_bilquad(creer_quad (etiq, St, NULL, NULL, NULL)));
+  free(etiq);
+  free(arg1);
+  free(arg2);
+  free(res);
 }
 
 char* buf_alloc ()
