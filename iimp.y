@@ -38,7 +38,7 @@
 
 %%
 
-S : C              {BILQUAD bil = bilquad_vide(); ic3a($1, bil); ecrire_bilquad(bil);}
+S : C              {BILQUAD bil = bilquad_vide(); ic3a($1, bil);}
   ;
 
 E : E PL T         {$$ = opr(Pl, 2, $1, $3);}
@@ -60,7 +60,7 @@ C : A SE C         {$$ = opr(Se, 2, $1, $3);}
   ;
 
 A : V AF E         {$$ = opr(Af, 2, id($1), $3);}
-  | SK             {$$ = opr(Sk, 2, NULL, NULL);}
+  | SK             {$$ = opr(Sk, 0, NULL, NULL);}
   | '(' C ')'      {$$ = $2;}
   | WH E DO A      {$$ = opr(Wh, 2, $2, $4);}
   | IF E TH C EL A {$$ = opr(If, 3, $2, $4, $6);}
@@ -70,51 +70,46 @@ A : V AF E         {$$ = opr(Af, 2, id($1), $3);}
 
 char*ic3a(nodeType *n, BILQUAD bil)
 {
-  if (!n)
-    return NULL;
-  char *etiq = buf_alloc();
-  char* arg1 = buf_alloc();
-  char* arg2 = buf_alloc();
-  char* res = buf_alloc();
-  switch(n->type)
+    if (!n)
+	return NULL;
+    char *etiq = buf_alloc();
+    char* arg1 = buf_alloc();
+    char* arg2 = buf_alloc();
+    char* res = buf_alloc();
+    switch(n->type)
     { 
     case typeCon:
-      sprintf (etiq,"ET%d", cpt++);
-      sprintf (res, "CT%d", cpt++);
-      sprintf (arg1, "%d", n->con.value);
-      bil = concatq(bil, creer_bilquad(creer_quad (etiq, Afc, arg1, NULL, res)));
-      free(etiq);
-      free(arg1);
-      free(arg2);
-      free(res);
-      return res;
+	sprintf (etiq,"ET%d", cpt++);
+	sprintf (res, "CT%d", cpt++);
+	sprintf (arg1, "%d", n->con.value);
+	bil = concatq(bil, creer_bilquad(creer_quad (etiq, Afc, arg1, arg2, res)));
+	ecrire_bilquad(bil);
+	return res;
     case typeId:
-      sprintf (etiq,"ET%d", cpt++);
-      sprintf (res, "%d", n->id.i);
-      bil = concatq(bil, creer_bilquad(creer_quad (etiq, Sk, NULL, NULL, res)));
-      free(etiq);
-      free(arg1);
-      free(arg2);
-      free(res);
-      return res;
+	sprintf (etiq,"ET%d", cpt++);
+
+	sprintf (res, "%s", n->id.i);
+	bil = concatq(bil, creer_bilquad(creer_quad (etiq, Sk, arg1, arg2, res)));
+	ecrire_bilquad(bil);
+	return res;
     case typeOpr:
-      switch(n->type)
+	switch(n->opr.oper)
 	{
 	case Af:
-	  sprintf (etiq,"ET%d", cpt++);
-	  arg1 = ic3a(n->opr.op[0], bil);
-	  arg2 =  ic3a(n->opr.op[1], bil);
-	  bil = concatq(bil, creer_bilquad(creer_quad (etiq, Af, arg1, arg2, NULL)));
-	  free(etiq);
-	  free(arg1);
-	  free(arg2);
-	  free(res);
-	  return res;
-	case Sk:
 	    sprintf (etiq,"ET%d", cpt++);
 	    arg1 = ic3a(n->opr.op[0], bil);
-	    arg2 = ic3a(n->opr.op[1], bil);
-	    bil = concatq(bil, creer_bilquad(creer_quad (etiq, Sk, NULL, NULL, NULL)));	  
+	    arg2 =  ic3a(n->opr.op[1], bil);
+	    bil = concatq(bil, creer_bilquad(creer_quad (etiq, Af, arg1, arg2, NULL)));
+	    free(etiq);
+	    free(arg1);
+	    free(arg2);
+	    free(res);
+	    ecrire_bilquad(bil);
+	    return res;
+	case Sk:
+	    sprintf (etiq,"ET%d", cpt++);
+	    bil = concatq(bil, creer_bilquad(creer_quad (etiq, Sk, NULL, NULL, NULL)));
+	    ecrire_bilquad(bil);
 	case Se:
 	    ic3a(n->opr.op[0], bil);
 	    ic3a(n->opr.op[1], bil);
@@ -135,6 +130,7 @@ char*ic3a(nodeType *n, BILQUAD bil)
 	    bil = concatq(bil, creer_bilquad(creer_quad (etiq, Jz, arg1DebutIf, NULL, res)));
 	    bil = concatq(bil, then);
 	    bil = concatq(bil, els);
+	    ecrire_bilquad(bil);
 	case Wh:
 	    sprintf (etiq,"ET%d", cpt++);
 	    res = ic3a(n->opr.op[0], bil);
@@ -151,16 +147,14 @@ char*ic3a(nodeType *n, BILQUAD bil)
 	    bil = concatq(bil, Do);
 	    sprintf (etiq,"ET%d", cpt++);
 	    bil = concatq(bil, creer_bilquad(creer_quad (etiq, Sk, NULL, NULL, NULL)));
+	    ecrire_bilquad(bil);
 	case Pl:
 	    sprintf (etiq,"ET%d", cpt++);
 	    arg1 = ic3a(n->opr.op[0], bil);
 	    arg2 =  ic3a(n->opr.op[1], bil);
 	    sprintf (res, "VA%d", cpt++);
 	    bil = concatq(bil, creer_bilquad(creer_quad (etiq, Pl, arg1, arg2, res)));
-	    free(etiq);
-	    free(arg1);
-	    free(arg2);
-	    free(res);
+	    ecrire_bilquad(bil);
 	    return res;
 	case Mo:
 	    sprintf (etiq,"ET%d", cpt++);
@@ -168,10 +162,7 @@ char*ic3a(nodeType *n, BILQUAD bil)
 	    arg2 =  ic3a(n->opr.op[1], bil);
 	    sprintf (res, "VA%d", cpt++);
 	    bil = concatq(bil, creer_bilquad(creer_quad (etiq, Mo, arg1, arg2, res)));
-	    free(etiq);
-	    free(arg1);
-	    free(arg2);
-	    free(res);
+	    ecrire_bilquad(bil);
 	    return res;
 	case Mu:
 	    sprintf (etiq,"ET%d", cpt++);
@@ -179,19 +170,17 @@ char*ic3a(nodeType *n, BILQUAD bil)
 	    arg2 =  ic3a(n->opr.op[1], bil);
 	    sprintf (res, "VA%d", cpt++);
 	    bil = concatq(bil, creer_bilquad(creer_quad (etiq, Mu, arg1, arg2, res)));
-	    free(etiq);
-	    free(arg1);
-	    free(arg2);
-	    free(res);
+	    ecrire_bilquad(bil);
 	    return res;	    
 	}
-  }
-  sprintf (etiq,"ET%d", cpt++);
-  bil = concatq(bil, creer_bilquad(creer_quad (etiq, St, NULL, NULL, NULL)));
-  free(etiq);
-  free(arg1);
-  free(arg2);
-  free(res);
+    }
+    sprintf (etiq,"ET%d", cpt++);
+    bil = concatq(bil, creer_bilquad(creer_quad (etiq, St, NULL, NULL, NULL)));
+    ecrire_bilquad(bil);
+    free(etiq);
+    free(arg1);
+    free(arg2);
+    free(res);
 }
 
 char* buf_alloc ()
