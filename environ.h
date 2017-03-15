@@ -31,4 +31,7 @@ extern int valch(ENV rho, char *var); /* valeur de var dans envirnt rho         
 #define Jp 263
 #define Jz 264
 #define St 265
+#define Wh 266
+#define If 267
+#define Se 268
 #endif

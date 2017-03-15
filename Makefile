@@ -1,4 +1,4 @@
-SRCS = environ.c bilquad.c
+SRCS = environ.c bilquad.c nodeType.c
 OBJS = $(SRCS:.c=.o)
 
 LEX_IN  =   $(wildcard *.l)
@@ -53,6 +53,7 @@ clean       :
 	$(RM) *~
 	$(RM) *.tab.c *.tab.h *.tab.o
 	$(RM) *.yy.c *.yy.o
+	$(RM) environ.o bilquad.o
 	$(RM) $(LEX_OUT)
 	$(RM) $(YACC_OUT)
 
