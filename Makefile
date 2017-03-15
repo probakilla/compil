@@ -53,8 +53,9 @@ clean       :
 	$(RM) *~
 	$(RM) *.tab.c *.tab.h *.tab.o
 	$(RM) *.yy.c *.yy.o
-	$(RM) environ.o bilquad.o
+	$(RM) $(OBJS)
 	$(RM) $(LEX_OUT)
 	$(RM) $(YACC_OUT)
+	$(RM) .#bilquad.h	
 
 re          :   clean all
